@@ -1,0 +1,51 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: mtu-update
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      k8s-app: mtu-update
+      kubernetes.io/cluster-service: "true"
+  template:
+    metadata:
+      labels:
+        k8s-app: mtu-update
+        kubernetes.io/cluster-service: "true"
+      annotations:
+        scheduler.alpha.kubernetes.io/tolerations: >-
+          [{"key":"dedicated","operator":"Equal","value":"master","effect":"NoSchedule"}]
+    spec:
+      serviceAccountName: cilium
+      containers:
+      - image: docker.io/cilium/update-mtu:latest
+        imagePullPolicy: Always
+        name: mtu-update
+        command: [ "./mtu-update" ]
+        volumeMounts:
+          - name: cilium-run
+            mountPath: /var/run/cilium
+        securityContext:
+          capabilities:
+            add:
+              - "NET_ADMIN"
+          privileged: true
+      # To update Cilium devices in host netns
+      hostNetwork: true
+      # To read /proc/pid/net/ns to iterate child netns
+      hostPID: true
+      volumes:
+          # To communicate with Cilium
+        - name: cilium-run
+          hostPath:
+            path: /var/run/cilium
+      # Apparently DaemonSets must set this to Always, even though we only want
+      # to run this once.
+      restartPolicy: Always
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node.cloudprovider.kubernetes.io/uninitialized
+        value: "true"
