@@ -20,7 +20,8 @@ Update the MTU across a k8s cluster:
 
 ```
 $ kubectl create -f https://raw.githubusercontent.com/cilium/mtu-update/master/mtu-update.yaml
-(Check the logs for the newly created pod to validate that the MTU was updated)
+$ kubectl get ds mtu-update -n kube-system
+(Wait and observe that all pods are ready)
 $ kubectl delete -f https://raw.githubusercontent.com/cilium/mtu-update/master/mtu-update.yaml
 ```
 
